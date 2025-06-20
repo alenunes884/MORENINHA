@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infográfico de Atenuação de Rede - Moreninhas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #0F172A, #1A202C);
+            color: #E2E8F0;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .kpi-card {
+            background: linear-gradient(to bottom right, #1A202C, #2D3748);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(44, 62, 80, 0.5);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.4), 0 6px 8px -3px rgba(0, 0, 0, 0.1);
+        }
+        .section-card {
+            background: linear-gradient(to bottom right, #1A202C, #2D3748);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(44, 62, 80, 0.5);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            background-color: #2D3748;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        thead {
+            background-color: #2C3A47;
+            color: #A0AEC0;
+        }
+        th, td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #4A5568;
+        }
+        tbody tr:hover {
+            background-color: #4A5568;
+        }
+        .text-blue-main { color: #0074D9; }
+        .text-blue-light { color: #00A6FB; }
+        .text-yellow-accent { color: #FFC300; }
+        .text-red-critical { color: #DC3B71; }
+        .text-green-excellent { color: #28C76F; }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-light">Análise de Atenuação da Rede</h1>
+            <p class="text-lg text-gray-400 mt-2">Dashboard Operacional - Moreninhas</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-8">
+                <h2 class="text-2xl font-bold mb-4 text-center text-blue-main">Visão Geral da Saúde da Rede</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="kpi-card">
+                        <h3 class="text-gray-400 font-medium">Total de Clientes</h3>
+                        <p id="total-clients" class="text-4xl font-bold text-blue-light mt-2">-</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-gray-400 font-medium">Atenuação Média</h3>
+                        <p id="avg-attenuation" class="text-4xl font-bold text-yellow-accent mt-2">-</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-gray-400 font-medium">Pior Sinal (dBm)</h3>
+                        <p id="worst-signal" class="text-4xl font-bold text-red-critical mt-2">-</p>
+                    </div>
+                    <div class="kpi-card">
+                        <h3 class="text-gray-400 font-medium">Melhor Sinal (dBm)</h3>
+                        <p id="best-signal" class="text-4xl font-bold text-green-excellent mt-2">-</p>
+                    </div>
+                </div>
+
+                <div class="section-card p-4 md:p-6">
+                    <h3 class="text-xl font-semibold mb-1 text-center text-blue-main">Distribuição de Clientes por Qualidade de Sinal</h3>
+                    <p class="text-center text-gray-400 mb-4">Uma visão geral da saúde da rede, classificando os clientes em quatro categorias de qualidade com base na potência do sinal.</p>
+                    <div class="chart-container h-80 md:h-96">
+                        <canvas id="signalQualityChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="critical-clients" class="mb-8">
+                <div class="section-card p-4 md:p-6">
+                    <h3 class="text-xl font-semibold mb-1 text-center text-blue-main">Clientes em Estado Crítico de Atenção</h3>
+                     <p class="text-center text-gray-400 mb-4">Lista dos 10 clientes com os piores níveis de sinal. Estes casos exigem ação prioritária para evitar a interrupção do serviço.</p>
+                    <div class="table-container rounded-lg">
+                        <table class="w-full text-left text-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="p-3 text-sm font-semibold tracking-wide">Cliente</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide text-center">Potência (dBm)</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide hidden md:table-cell">Slot PON</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide hidden lg:table-cell">Endereço</th>
+                                </tr>
+                            </thead>
+                            <tbody id="critical-clients-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="critical-streets" class="mb-8">
+                <div class="section-card p-4 md:p-6">
+                    <h3 class="text-xl font-semibold mb-1 text-center text-blue-main">Ruas com Maior Concentração de Clientes Críticos</h3>
+                    <p class="text-center text-gray-400 mb-4">Identifica as ruas com mais clientes em estado de atenção ou crítico, auxiliando na priorização de manutenções em áreas específicas.</p>
+                    <div class="table-container rounded-lg">
+                        <table class="w-full text-left text-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="p-3 text-sm font-semibold tracking-wide">Rua</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide text-center">Total Clientes</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide text-center">Média Atenuação (dBm)</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide text-center">Clientes Críticos (> -28 dBm)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="critical-streets-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="all-clients" class="mb-8">
+                <div class="section-card p-4 md:p-6">
+                    <h3 class="text-xl font-semibold mb-1 text-center text-blue-main">Tabela Completa de Clientes Atenuados</h3>
+                    <p class="text-center text-gray-400 mb-4">Lista completa de todos os clientes com seus dados de atenuação.</p>
+                    <div class="table-container rounded-lg">
+                        <table class="w-full text-left text-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="p-3 text-sm font-semibold tracking-wide">Cliente</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide text-center">Potência (dBm)</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide hidden md:table-cell">Slot PON</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide hidden lg:table-cell">Endereço</th>
+                                    <th class="p-3 text-sm font-semibold tracking-wide hidden lg:table-cell">Splitter</th>
+                                </tr>
+                            </thead>
+                            <tbody id="all-clients-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="infrastructure" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="section-card p-4 md:p-6">
+                    <h3 class="text-xl font-semibold mb-1 text-center text-blue-main">Distribuição de Clientes por Slot PON</h3>
+                    <p class="text-center text-gray-400 mb-4">Identifica as portas da OLT com maior concentração de clientes, indicando possíveis pontos de sobrecarga na infraestrutura lógica.</p>
+                    <div class="chart-container h-96">
+                        <canvas id="clientsByPonChart"></canvas>
+                    </div>
+                </div>
+                <div class="section-card p-4 md:p-6">
+                    <h3 class="text-xl font-semibold mb-1 text-center text-blue-main">Distribuição de Clientes por Splitter</h3>
+                    <p class="text-center text-gray-400 mb-4">Mostra a concentração de clientes nos splitters físicos da rede. Valores altos podem indicar pontos de falha críticos.</p>
+                    <div class="chart-container h-96">
+                        <canvas id="clientsBySplitterChart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+        </main>
+
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            <p>Infográfico gerado em <span id="generation-date"></span>.</p>
+            <p>Este é um documento de análise interna para otimização da rede.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const rawData = [
+                ["THAIS FERREIRA DE SOUZA", "SLOT 1 PON 1", "-27.00", "RUA ARCEBURGO 340", "SPLITTER 1"],
+                ["WILLIAM AGUIAR MEDINA CORNELIO", "SLOT 1 PON 10", "-25.05", "RUA CELESTE CARVALHO RODRIGUES 150", "SPLITTER 10"],
+                ["VAGNER VILALVA ESPINOSA", "SLOT 1 PON 10", "-26.08", "RUA CELESTE CARVALHO RODRIGUES 347", "SPLITTER 10"],
+                ["ANA CLAUDIA VEIRA DA CRUZ", "SLOT 1 PON 10", "-28.05", "RUA ACEBURGO 286", "SPLITTER 10"],
+                ["REGINA MACHADO DOS SANTOS", "SLOT 1 PON 10", "-26.06", "RUA ARCEBURGO 95", "SPLITTER 10"],
+                ["SONIA MARIA DA SILVA", "SLOT 1 PON 10", "-25.02", "Rua Sambacuim 206", "SPLITTER 10"],
+                ["JANAINA MENDES SOUZA CAVALCANTE DA SILVA", "SLOT 1 PON 11", "-25.07", "RUA PEDRO ROMA 7", "SPLITTER 11"],
+                ["SONIA MARIA DA SILVA", "SLOT 1 PON 13", "-26.06", "Rua Sambacuim 206", "SPLITTER 13"],
+                ["VILMA DE SOUZA CORREA", "SLOT 1 PON 13", "-25.08", "RUA NEFERSON CLAIR DE MORAES 3089", "SPLITTER 13"],
+                ["LUIZ ORLANDO DA LUZ", "SLOT 1 PON 13", "-28.54", "RUA NEFERSON CLAIR DE MORAES 308", "SPLITTER 13"],
+                ["LEVI PEREIRA RAMOS", "SLOT 1 PON 13", "-27.70", "RUA NEFERSON CLAIR DE MORAES 30856", "SPLITTER 13"],
+                ["ANTONIA PEREIRA RODRIGUES", "SLOT 1 PON 16", "-30.00", "RUA JAGUARIUNA 1035", "SPLITTER 16"],
+                ["MARIA DE JESUS BEZERRA DA SILVA", "SLOT 1 PON 16", "-25.02", "RUA JAGUARIUNA 1010", "SPLITTER 16"],
+                ["DANIEL VITOR MORAIS MIGUEL", "SLOT 1 PON 2", "-25.01", "Rua Maia 138", "SPLITTER 2"],
+                ["JOAO CARLOS FERREIRA DA SILVA", "SLOT 1 PON 3", "-26.77", "RUA PARIRIS 28", "SPLITTER 3"],
+                ["VANESSA RATCOV DE ALMEIDA", "SLOT 1 PON 5", "-26.58", "RUA ANANI 77", "SPLITTER 5"],
+                ["HENRIQUE DOS SANTOS DO NASCIMENTO", "SLOT 1 PON 6", "-25.52", "RUA PALMACIA 18", "SPLITTER 6"],
+                ["SUELEN FERNANDA CARA", "SLOT 1 PON 7", "-29.02", "RUA ARCEBURGO 195", "SPLITTER 7"],
+                ["ANDERSON GUIMARAES GIMENES", "SLOT 1 PON 8", "-28.05", "RUA PAULO FABIANE DE BARROS 213", "SPLITTER 8"],
+                ["NATALI GOMES DE OLIVEIRA SIQUEIRA", "SLOT 11 PON 7", "-25.52", "TRAVESSA ORLANDO MORESCHI 176", "SPLITTER 135"],
+                ["ANDREZA DRIELY PEREIRA DA LUZ", "SLOT 11 PON 7", "-25.08", "RUA ORLANDO MORECHI 266", "SPLITTER 135"],
+                ["WALESTON GOMIDI DE SOUZA", "SLOT 11 PON 7", "-25.72", "RUA MÁRIO FERREIRA C NDIDO 58", "SPLITTER 135"],
+                ["LIDIANA BARBOSA AJALA", "SLOT 11 PON 7", "-25.85", "TRAVESSA ORLANDO MORESCHI 286", "SPLITTER 135"],
+                ["LARISSA RODRGUES MENDONCA", "SLOT 11 PON 8", "-30.45", "RUA MARIO FERREIRA CANDIDO 379", "SPLITTER 136"],
+                ["EDUVIRGE DE BRITO MEDEIRO DA SILVA", "SLOT 2 PON 16", "-27.02", "RUA ORICURI 98", "SPLITTER 32"],
+                ["OSVALDO BATISTA", "SLOT 2 PON 3", "-25.85", "RUA UBIRAJARA GUARANI 665", "SPLITTER 19"],
+                ["ALEXANDRE MELO DOS SANTOS", "SLOT 2 PON 3", "-26.38", "RUA UBIRAJARA GUARANI 459", "SPLITTER 19"],
+                ["ADEL LIMA DE OLIVEIRA", "SLOT 2 PON 5", "-26.02", "Rua Itapecerica 463", "SPLITTER 21"],
+                ["SUELI MASCARENHAS DE CARVALHO", "SLOT 2 PON 5", "-30.96", "RUA ITAPECERICA 235", "SPLITTER 21"],
+                ["AMANDA VIEIRA DE ALMEIDA", "SLOT 2 PON 7", "-26.02", "RUA TABOAO DA SERRA 224", "SPLITTER 23"],
+                ["DEBORA OLIVEIRA DE MOURA", "SLOT 2 PON 7", "-32.21", "RUA TABOO DA SERRA 176", "SPLITTER 23"],
+                ["PAULO SERGIO NOGUEIRA", "SLOT 2 PON 9", "-25.52", "RUA ARUAQUE 25", "SPLITTER 25"],
+                ["ROSA BENEVIDES DA SILVA SOUZA ELISANGELA CRISTINA VIEIRA REZENDE CHAG", "SLOT 2 PON 9", "-26.19", "RUA ARUAQUE 97", "SPLITTER 25"],
+                ["FATIMA REGINA FRANCA FONSECA", "SLOT 3 PON 1", "-28.53", "RUA UMARIZAL 58", "SPLITTER 33"],
+                ["LUCINEIA SILVANA JANUARIA DA CRUZ", "SLOT 3 PON 11", "-32.21", "RUA TERTULIANO SILVA 120", "SPLITTER 43"],
+                ["LEONILDA DE ANDRADE GAMA", "SLOT 3 PON 11", "-25.85", "RUA MARIA DA GLORIA RIQUELME CONTE 195", "SPLITTER 43"],
+                ["CARLOS ALEXANDRE ANTUNES MARTINS", "SLOT 3 PON 11", "-25.85", "RUA CLOTILDE CHAIA 1079", "SPLITTER 43"],
+                ["MARIA APARECIDA ALVES DOS SANTOS", "SLOT 3 PON 11", "-33.00", "RUA CLOTILDE CHAIA 1132", "SPLITTER 43"],
+                ["JORDAN LIRA DA SILVA", "SLOT 3 PON 11", "-26.06", "RUA CLOTILDE CHAIA 821", "SPLITTER 43"],
+                ["ELOIR BONIFACIO DE AGUIAR", "SLOT 3 PON 11", "-26.00", "RUA CLOTILDE CHAIA 1072", "SPLITTER 43"],
+                ["FLORENCIO RIBEIRO DE PINHO JUNIOR", "SLOT 3 PON 11", "-26.08", "RUA CLOTILDE CHAIA 822", "SPLITTER 43"],
+                ["PEDRO LUSIANO DA SILVA LIMA", "SLOT 3 PON 11", "-27.21", "RUA CLOTILDE CHAIA 989", "SPLITTER 43"],
+                ["ANA MARIA GOMES", "SLOT 3 PON 11", "-27.69", "RUA CLOTILDE CHAIA 1089", "SPLITTER 43"],
+                ["MARCIO DE JESUS FONTOURA", "SLOT 3 PON 11", "-26.78", "RUA CLOTILDE CHAIA 1009", "SPLITTER 43"],
+                ["CATIANE ALVES CANDIDO RUA TERTULIANO SILVA 120", "SLOT 3 PON 11", "-25.52", "RUA TERTULIANO SILVA 120", "SPLITTER 43"],
+                ["CESAR CRISTALDO CHAMORRO", "SLOT 3 PON 11", "-27.00", "RUA CLOTILDE CHAIA 1082", "SPLITTER 43"],
+                ["FRANCISCO KELVIN LOPES MARQUEZOLO", "SLOT 3 PON 11", "-27.21", "RUA TERTULIANO SILVA 83", "SPLITTER 43"],
+                ["VANDEGREI FERNANDES TOLEDO", "SLOT 3 PON 11", "-26.57", "RUA CLOTILDE CHAIA 1069", "SPLITTER 43"],
+                ["YOHANNYS ALEJANDRO MARCANO LARA RUA ELPIDIO REIS 31", "SLOT 3 PON 11", "-29.20", "RUA ELPIDIO REIS 31", "SPLITTER 43"],
+                ["LUCAS PEREIRA DE SOUZA", "SLOT 3 PON 12", "-32.21", "RUA SALIM DERZI 8", "SPLITTER 44"],
+                ["JULIANA CASSIA NASCIMENTO DA CRUZ", "SLOT 3 PON 13", "-26.02", "RUA MARIA DA GLORIA RIQUELME CONTE 7", "SPLITTER 45"],
+                ["KELLY CRISTINA NEVES BATISTA", "SLOT 3 PON 13", "-27.44", "RUA RADRA MAMEDE ALLI 506 CASA 03", "SPLITTER 45"],
+                ["JENIFFER SANTOS MENDES RIBEIRO", "SLOT 3 PON 13", "-30.97", "RUA RADRA MAMED ALLI 533", "SPLITTER 45"],
+                ["GUILHERME SILVA ARAUJO", "SLOT 3 PON 2", "-25.37", "RUA ANACA 565", "SPLITTER 34"],
+                ["EDIMAR RODRIGO DE LIMA", "SLOT 3 PON 4", "-28.53", "RUA JACARANDATA 58", "SPLITTER 36"],
+                ["JONAS RAFAEL NASCIMENTO GOMES", "SLOT 3 PON 4", "-26.02", "RUA JACARANDATA 140", "SPLITTER 36"],
+                ["GISELE BARROSO", "SLOT 3 PON 4", "-30.96", "RUA RUBIACEAS 71", "SPLITTER 36"],
+                ["ARLENE TEODORO FELIPE", "SLOT 3 PON 5", "-26.38", "RUA TAMIARAMA 33", "SPLITTER 37"],
+                ["EUJACIO MOTA CALDAS", "SLOT 3 PON 5", "-26.19", "RUA TAMIARAMA 81", "SPLITTER 37"],
+                ["ANDERSON MULLER TAVARES", "SLOT 3 PON 5", "-28.86", "RUA GENCIANA 56", "SPLITTER 37"],
+                ["WILSON LIMA BRINGEL", "SLOT 3 PON 6", "-29.20", "AVENIDA GRANDE FLORESTA 356", "SPLITTER 38"],
+                ["ALEX CORREA MIGUEL", "SLOT 3 PON 6", "-26.77", "RUA GRANDE FLORESTA 07", "SPLITTER 38"],
+                ["EDILEUSA DIAS LOPES", "SLOT 3 PON 6", "-28.53", "RUA GRANDE FLORESTA 316", "SPLITTER 38"],
+                ["ISAURA LIA DE JESUS", "SLOT 3 PON 7", "-25.22", "RUA MADEIRA BRANCA 195", "SPLITTER 39"],
+                ["JORGE DE OLIVEIRA", "SLOT 3 PON 7", "-31.54", "RUA MADEIRA BRANCA 48", "SPLITTER 39"],
+                ["LARISSA FERNANDA DANTAS SEVERINO", "SLOT 3 PON 7", "-27.95", "RUA MADEIRA BRANCA 291", "SPLITTER 39"],
+                ["BRAZ DOS SANTOS", "SLOT 3 PON 7", "-26.38", "RUA MADEIRA BRANCA 283", "SPLITTER 39"],
+                ["VICENTE SILVA DA ROCHA", "SLOT 3 PON 7", "-26.19", "RUA JAPA 74", "SPLITTER 39"],
+                ["MANUELA SANTACRUZ BOGADO", "SLOT 3 PON 7", "-25.88", "RUA MADEIRA BRANCA 24", "SPLITTER 39"],
+                ["VANDA BARBOSA DE LIMA", "SLOT 3 PON 7", "-28.23", "RUA MADEIRA BRANCA 213", "SPLITTER 39"],
+                ["JULIANO MORALES FILHO", "SLOT 3 PON 7", "-29.20", "RUA MADEIRA BRANCA 164", "SPLITTER 39"],
+                ["NOEMIA PEREIRA TRINDADE", "SLOT 3 PON 7", "-25.68", "RUA OREADE 364", "SPLITTER 39"],
+                ["ZENILDA RIBEIRO LOPES", "SLOT 3 PON 7", "-27.69", "RUA JAPA 49", "SPLITTER 39"],
+                ["AILTON CESAR SOUZA", "SLOT 3 PON 7", "-27.00", "RUA OREADE 258", "SPLITTER 39"],
+                ["EMIDIO SOUZA NETO", "SLOT 3 PON 7", "-26.68", "AVENIDA GRANDE FLORESTA 119", "SPLITTER 39"],
+                ["LUCIENE LIMA DE AGUIAR", "SLOT 3 PON 7", "-27.44", "RUA MADEIRA BRANCA 347", "SPLITTER 39"],
+                ["JOSE MARCOS DA SILVA", "SLOT 3 PON 7", "-27.43", "RUA JAPA 73", "SPLITTER 39"],
+                ["LEONARDO MENDES BENAGE", "SLOT 3 PON 9", "-25.52", "RUA IVO OSMAN MIRANDA 200", "SPLITTER 41"],
+                ["ANANIAS FIGUEREDO COLMAN", "SLOT 3 PON 9", "-25.33", "RUA IVO OSMAN MIRANDA 199", "SPLITTER 41"],
+                ["NAUDILEIDE ALVES DOS SANTOS CAΝΕΡΑ", "SLOT 4 PON 2", "-26.57", "RUA RIBEIRA 531", "SPLITTER 50"],
+                ["JOSE FELIPE DA SILVA SANTANA", "SLOT 4 PON 3", "-25.22", "RUA JOAO ADOLFO CINTRA 144", "SPLITTER 51"],
+                ["INACIO MENDES MARINHO", "SLOT 4 PON 3", "-26.98", "RUA JOAO ADOLFO CINTRA 133", "SPLITTER 51"],
+                ["ORALDO ORTIZ OLAZAR", "SLOT 4 PON 3", "-25.22", "RUA JOAO ADOLFO CINTRA 264", "SPLITTER 51"],
+                ["LUCIANO PEREIRA DE SOUZA", "SLOT 4 PON 7", "-26.77", "RUA QUINA DA SERRA 211", "SPLITTER 55"],
+                ["MAINARA PEREIRA DOS SANTOS", "SLOT 4 PON 7", "-25.23", "RUA ELIAS SAAD 60", "SPLITTER 55"],
+                ["CAIO THIERRE DE SOUZA PEREIRA", "SLOT 4 PON 7", "-27.95", "RUA ELIAS SAAD 107 CASA 03", "SPLITTER 55"],
+                ["CLAUDIO SILVA SOARES", "SLOT 4 PON 9", "-26.77", "RUA BAOBA 803", "SPLITTER 57"],
+                ["MARIA BEZERRA DA SILVA", "SLOT 5 PON 15", "-29.20", "RUA ISRAELANDIA 850", "SPLITTER 79"],
+                ["WESLEI MARTINS CORREIA", "SLOT 5 PON 15", "-25.56", "RUA ISRAELANDIA 1035", "SPLITTER 79"],
+                ["JOICILENE ANTENOR DOS SANTOS", "SLOT 5 PON 9", "-25.20", "RUA CUPIRA 28", "SPLITTER 73"],
+                ["THAISA DE SOUZA FERNANDES", "SLOT 6 PON 10", "-25.37", "RUA OSNI MOURA 395", "SPLITTER 90"],
+                ["ELKER PRATES ROMEIRO", "SLOT 6 PON 12", "-30.00", "RUA TAMAREIRA QUADRA 07 LOTE 08", "SPLITTER 92"],
+                ["MARCO ANTONIO MORAES DE JESUS", "SLOT 6 PON 12", "-26.68", "RUA EQUIPE BARRICHELO 531", "SPLITTER 92"],
+                ["ELAINE DA ROSA CARBONERA", "SLOT 6 PON 16", "-25.38", "RUA ELIAS MIGUEL BASMAGE QD 07 LT 29", "SPLITTER 96"],
+                ["LUAN SILVA DO NASCIMENTO", "SLOT 6 PON 2", "-26.57", "RUA FIRMINOPOLIS 464", "SPLITTER 82"],
+                ["NATANIELE APARECIDA MARQUES MIRANDA", "SLOT 6 PON 2", "-26.02", "RUA FIRMINOPOLIS 491", "SPLITTER 82"],
+                ["CLEBER MARTINEZ SILVEIRA", "SLOT 6 PON 4", "-26.98", "RUA CAMOCIM 442", "SPLITTER 84"],
+                ["MARCOS CORDEIRO GON?ALES", "SLOT 6 PON 7", "-33.01", "RUA ALTO DA SERRA 1401 Q35 L 02", "SPLITTER 87"],
+                ["CIDINEI SEBASTIÃO DE LIMA", "SLOT 6 PON 8", "-26.77", "RUA FRAIBURGO 1375", "SPLITTER 88"],
+                ["SABRINA DA SILVA MENDOZA", "SLOT 6 PON 9", "-28.86", "RUA DAS PEDRAS 83", "SPLITTER 89"],
+                ["ALEXANDRO DE SOUZA PEREIRA", "SLOT 6 PON 9", "-25.80", "RUA BENTO DE SOUZA 10", "SPLITTER 89"],
+                ["LAUCIDIO DE OLIVEIRA MEDINA", "SLOT 6 PON 9", "-27.44", "RUA BENTO DE SOUZA 688", "SPLITTER 89"],
+                ["RAQUEL DE OLIVEIRA LEGUIR", "SLOT 6 PON 9", "-25.85", "RUA DAS PEDRAS 77", "SPLITTER 89"],
+                ["MATHEUS RODRIGUES MACENA", "SLOT 6 PON 9", "-26.77", "RUA BENTO DE SOUZA 1008", "SPLITTER 89"],
+                ["FRANCINETE SILVA DOS SANTOS", "SLOT 6 PON 9", "-25.85", "RUA GENCIANA 422", "SPLITTER 89"],
+                ["HAYUNNE GALVAO LEITE PEDROZO", "SLOT 7 PON 13", "-25.37", "RUA ARIRI 561", "SPLITTER 109"],
+                ["EDUVIRGES DA CRUZ BORGES", "SLOT 7 PON 13", "-29.20", "RUA ARIRI 571", "SPLITTER 109"],
+                ["APARECIDA ALVES PEREIRA", "SLOT 7 PON 16", "-27.40", "RUA BARUERI 1029", "SPLITTER 112"],
+                ["KAILLANY CRISTINY PEREIRA DA SILVA SOUSA", "SLOT 7 PON 16", "-30.97", "Travessa Sambaiba 23", "SPLITTER 112"],
+                ["ENEIAS CRISPINIANO DA ROCHA", "SLOT 7 PON 16", "-27.21", "RUA BARUERI 1044", "SPLITTER 112"],
+                ["DORIVAL XAVIER DA SILVA", "SLOT 7 PON 16", "-27.44", "RUA BARUERI 1069", "SPLITTER 112"],
+                ["DILMA SILVA MULLER", "SLOT 7 PON 2", "-26.02", "RUA ELIAS MIGUEL BASMAGE QD14 LT14", "SPLITTER 98"],
+                ["ABNER PINHEIRO DE FREITAS NETO", "SLOT 7 PON 3", "-26.08", "RUA ALBINO CALDART 90 Q24 L9", "SPLITTER 99"],
+                ["DANIEL PEREIRA LIMA JUNIOR RUA MAIA 87", "SLOT 7 PON 3", "-26.57", "RUA MAIA 87", "SPLITTER 99"],
+                ["LEANDRO BOCALON MARTINS", "SLOT 7 PON 4", "-25.22", "RUA ALBINO CALDART Q09 L16", "SPLITTER 100"],
+                ["TIAGO DE SOUSA LIMA RAMOS", "SLOT 7 PON 4", "-25.24", "RUA ALBINO CALDART QD10LT10", "SPLITTER 100"],
+                ["MARIO AUGUSTO MENDONCA", "SLOT 7 PON 4", "-25.22", "RUA RIO JORDAO 261", "SPLITTER 100"],
+                ["EMERSON APARECIDO MARCONDES MACEDO", "SLOT 8 PON 10", "-29.20", "RUA SAMBACUIM 229", "SPLITTER 122"],
+                ["ANGELA MARIA FERNANDES MEES", "SLOT 8 PON 10", "-26.57", "RUA SAMBACUIM 240", "SPLITTER 122"],
+                ["CAMILA KARLA SOARES GOUVEIA", "SLOT 8 PON 10", "-27.44", "RUA MACABA 512", "SPLITTER 122"],
+                ["ESEQUIEL PADILHA AMARAL", "SLOT 8 PON 10", "-26.98", "RUA SAMBACUIM 218", "SPLITTER 122"],
+                ["ROSANGELA RODRIGUES DOS REIS MEDEIROS", "SLOT 8 PON 10", "-25.68", "RUA MACABA 187", "SPLITTER 122"],
+                ["DANIEL ANTONIO OSCANO MARVAL", "SLOT 8 PON 10", "-27.95", "RUA MACABA 545", "SPLITTER 122"],
+                ["YAICELI GRISLEY ESPINOZA MACHILLANDA", "SLOT 8 PON 10", "-25.37", "RUA MACABA 638", "SPLITTER 122"],
+                ["MAGNA APARECIDA URBANEK", "SLOT 8 PON 10", "-29.58", "RUA MACABA 188", "SPLITTER 122"],
+                ["WESLEY ANTUNES ALVES", "SLOT 8 PON 10", "-27.21", "RUA MACABA 471", "SPLITTER 122"],
+                ["ALEXANDRE MARTINS DA SILVA", "SLOT 8 PON 10", "-26.19", "RUA SAMBACUIM 137", "SPLITTER 122"],
+                ["CLEUSA OLIVERIA DE MESQUITA", "SLOT 8 PON 10", "-27.69", "RUA MACABA 430", "SPLITTER 122"],
+                ["BRUNO GOMES MARTINS", "SLOT 8 PON 10", "-27.95", "RUA MACABA 316", "SPLITTER 122"],
+                ["SONIA MARIA DA SILVA", "SLOT 8 PON 10", "-27.69", "RUA SAMBACUIM 209", "SPLITTER 122"],
+                ["PAULO FRANCISCO AJALA GUIMARAES", "SLOT 8 PON 10", "-27.95", "RUA SAMBACUIM 219", "SPLITTER 122"],
+                ["HENRIQUE DA SILVA PEREIRA", "SLOT 8 PON 10", "-27.95", "RUA MACABA 540", "SPLITTER 122"],
+                ["KARINA MENDES RODRIGUES", "SLOT 8 PON 10", "-26.02", "RUA MACABA 233", "SPLITTER 122"],
+                ["ANE MELRY SIQUEIRA CACERES", "SLOT 8 PON 11", "-25.22", "RUA COPAIBA 953", "SPLITTER 123"],
+                ["ANTONIA ROBES BRANDAO", "SLOT 8 PON 11", "-26.38", "RUA MURURE 579", "SPLITTER 123"],
+                ["NEUZA MARQUES DE OLIVEIRA", "SLOT 8 PON 12", "-27.95", "RUA QUINA DA SERRA 3", "SPLITTER 124"],
+                ["DANIELE BARROS DA SILVA", "SLOT 8 PON 15", "-25.82", "VILLAS DE PALOMA 52ap644", "SPLITTER 125"],
+                ["MARIO OSVALDO GOMES DA SILVA", "SLOT 8 PON 4", "-25.68", "RUA GUINE 661", "SPLITTER 116"],
+                ["MARIA DE LOURDES DA SILVA", "SLOT 8 PON 5", "-26.38", "RUA AMAPA DOCE 177", "SPLITTER 117"],
+                ["MARTHA GOMES DOS SANTOS", "SLOT 8 PON 5", "-27.21", "RUA BICUIBA 566", "SPLITTER 117"],
+                ["MICAEL BEZERRA PEREIRA", "SLOT 8 PON 6", "-26.21", "RUA BICUIBA 156", "SPLITTER 118"],
+                ["EDMAR MAIKON RICARDES TALAVERA", "SLOT 8 PON 7", "-27.69", "RUA ARATICUN 701", "SPLITTER 119"],
+                ["ADRIANA VANDELEI PEREIRA", "SLOT 8 PON 8", "-27.89", "RUA ARATICUN 305", "SPLITTER 120"],
+                ["GICELE FERREIRA DA SILVA", "SLOT 8 PON 9", "-28.86", "RUA BAGUARI 496", "SPLITTER 121"],
+                ["DINA DILVA SOARES DA COSTA", "SLOT 8 PON 9", "-28.23", "RUA BAGUARI 374", "SPLITTER 121"],
+                ["DAYANE DE SOUZA ORTIZ", "SLOT 8 PON 9", "-27.21", "RUA BAGUARI 493", "SPLITTER 121"],
+                ["EDER RAMAO SOSA RAMIRES", "SLOT 8 PON 9", "-28.53", "RUA BAGUARI 472", "SPLITTER 121"],
+                ["ROSA VITORIA VILLALBA CARRAPATEIRA", "SLOT 8 PON 9", "-27.44", "RUA MANDACARU 74", "SPLITTER 121"],
+                ["JOAO GILBERTO DE MAGALHAES MENDES ROCHA", "SLOT 8 PON 9", "-25.85", "TRAVESSA MIRINDIBA 50", "SPLITTER 121"],
+                ["YELITZA ALEJANDRA ESPINOZA MACHILLANDA", "SLOT 8 PON 9", "-26.58", "RUA BAGUARI 680", "SPLITTER 121"],
+                ["ROSENIR MARTINS DOS SANTOS", "SLOT 8 PON 9", "-31.54", "RUA BAGUARI 429", "SPLITTER 121"],
+                ["ANTONIO DE OLIVEIRA CARDOSO", "SLOT 8 PON 9", "-25.52", "RUA BAGUARI 469", "SPLITTER 121"],
+                ["ERINALDO DA SILVA MATOS", "SLOT 8 PON 9", "-27.44", "RUA BAGUARI 421", "SPLITTER 121"],
+                ["ADILSON ESPIRITO SANTO BULCAO", "SLOT 8 PON 9", "-26.38", "RUA BAGUARI 553", "SPLITTER 121"],
+                ["EVELYN MOREIRA", "SLOT 8 PON 9", "-26.36", "RUA JUTAI 150", "SPLITTER 121"]
+            ];
+            
+            const clientData = rawData.map(row => ({
+                cliente: row[0].trim().replace(/\n/g, ''),
+                slotPon: row[1].trim().replace(/\n/g, ''),
+                potencia: parseFloat(row[2].trim()),
+                endereco: row[3].trim().replace(/\n/g, ''),
+                splitter: row[4].trim().replace(/\n/g, '')
+            }));
+
+            function getSignalCategory(potencia) {
+                if (potencia > -26) return 'Excelente';
+                if (potencia >= -28 && potencia <= -26) return 'Bom';
+                if (potencia >= -30 && potencia < -28) return 'Atenção';
+                return 'Crítico';
+            }
+
+            function wrapLabel(str, maxWidth) {
+                if (str.length <= maxWidth) {
+                    return str;
+                }
+                let wrapped = [];
+                let words = str.split(' ');
+                let currentLine = '';
+                words.forEach(word => {
+                    if ((currentLine + word).length > maxWidth) {
+                        wrapped.push(currentLine.trim());
+                        currentLine = '';
+                    }
+                    currentLine += word + ' ';
+                });
+                wrapped.push(currentLine.trim());
+                return wrapped;
+            }
+
+            const defaultChartTooltip = {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                const item = tooltipItems[0];
+                                let label = item.chart.data.labels[item.dataIndex];
+                                return Array.isArray(label) ? label.join(' ') : label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#E2E8F0',
+                            font: {
+                                size: 12
+                            },
+                            boxWidth: 15,
+                            padding: 20
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#A0AEC0' },
+                        grid: { color: 'rgba(74, 85, 104, 0.5)' }
+                    },
+                    y: {
+                        ticks: { color: '#A0AEC0' },
+                        grid: { color: 'rgba(74, 85, 104, 0.5)' }
+                    }
+                }
+            };
+            
+            function renderOverview() {
+                document.getElementById('total-clients').textContent = clientData.length;
+                
+                const potencias = clientData.map(c => c.potencia);
+                const avg = (potencias.reduce((a, b) => a + b, 0) / potencias.length).toFixed(2);
+                document.getElementById('avg-attenuation').textContent = `${avg}`;
+
+                const worst = Math.min(...potencias).toFixed(2);
+                document.getElementById('worst-signal').textContent = `${worst}`;
+                
+                const best = Math.max(...potencias).toFixed(2);
+                document.getElementById('best-signal').textContent = `${best}`;
+            }
+
+            function renderSignalQualityChart() {
+                const categories = {
+                    'Excelente': 0,
+                    'Bom': 0,
+                    'Atenção': 0,
+                    'Crítico': 0
+                };
+                clientData.forEach(client => {
+                    categories[getSignalCategory(client.potencia)]++;
+                });
+
+                const ctx = document.getElementById('signalQualityChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(categories),
+                        datasets: [{
+                            data: Object.values(categories),
+                            backgroundColor: ['#28C76F', '#00A6FB', '#FFC300', '#DC3B71'],
+                            borderColor: '#1A202C',
+                            borderWidth: 4,
+                            hoverBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        ...defaultChartTooltip,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                    }
+                });
+            }
+
+            function renderCriticalClientsTable() {
+                const sorted = [...clientData].sort((a, b) => a.potencia - b.potencia);
+                const tableBody = document.getElementById('critical-clients-table');
+                tableBody.innerHTML = '';
+
+                sorted.slice(0, 10).forEach(client => {
+                    const category = getSignalCategory(client.potencia);
+                    let colorClass = '';
+                    if (category === 'Crítico') colorClass = 'text-red-critical';
+                    else if (category === 'Atenção') colorClass = 'text-yellow-accent';
+
+                    const row = `
+                        <tr class="border-b border-gray-700 hover:bg-gray-700">
+                            <td class="p-3 text-sm">${client.cliente}</td>
+                            <td class="p-3 text-sm text-center font-bold ${colorClass}">${client.potencia.toFixed(2)}</td>
+                            <td class="p-3 text-sm hidden md:table-cell text-gray-400">${client.slotPon}</td>
+                            <td class="p-3 text-sm hidden lg:table-cell text-gray-400">${client.endereco}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            }
+
+            function renderStreetsWithAttenuationTable() {
+                const streetData = {};
+                clientData.forEach(client => {
+                    let street = client.endereco.split(/(\d+)/)[0].trim().replace(/Rua |Travessa |Avenida /i, '').trim();
+                    if (!streetData[street]) {
+                        streetData[street] = {
+                            totalClients: 0,
+                            sumAttenuation: 0,
+                            criticalClients: 0,
+                            attenuations: []
+                        };
+                    }
+                    streetData[street].totalClients++;
+                    streetData[street].sumAttenuation += client.potencia;
+                    streetData[street].attenuations.push(client.potencia);
+                    if (getSignalCategory(client.potencia) === 'Crítico') {
+                        streetData[street].criticalClients++;
+                    }
+                });
+
+                const processedStreets = Object.entries(streetData).map(([streetName, data]) => ({
+                    street: streetName,
+                    totalClients: data.totalClients,
+                    avgAttenuation: (data.sumAttenuation / data.totalClients).toFixed(2),
+                    criticalClients: data.criticalClients
+                }));
+
+                processedStreets.sort((a, b) => {
+                    if (b.criticalClients !== a.criticalClients) {
+                        return b.criticalClients - a.criticalClients;
+                    }
+                    return parseFloat(a.avgAttenuation) - parseFloat(b.avgAttenuation);
+                });
+                
+                const tableBody = document.getElementById('critical-streets-table');
+                tableBody.innerHTML = '';
+
+                processedStreets.forEach(street => {
+                    const row = `
+                        <tr class="border-b border-gray-700 hover:bg-gray-700">
+                            <td class="p-3 text-sm text-gray-300">Rua ${street.street}</td>
+                            <td class="p-3 text-sm text-center text-blue-light">${street.totalClients}</td>
+                            <td class="p-3 text-sm text-center text-yellow-accent">${street.avgAttenuation}</td>
+                            <td class="p-3 text-sm text-center font-bold ${street.criticalClients > 0 ? 'text-red-critical' : 'text-green-excellent'}">${street.criticalClients}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            }
+
+            function renderAllClientsTable() {
+                const tableBody = document.getElementById('all-clients-table');
+                tableBody.innerHTML = '';
+
+                const sortedClients = [...clientData].sort((a, b) => a.cliente.localeCompare(b.cliente));
+
+                sortedClients.forEach(client => {
+                    const category = getSignalCategory(client.potencia);
+                    let colorClass = '';
+                    if (category === 'Crítico') colorClass = 'text-red-critical';
+                    else if (category === 'Atenção') colorClass = 'text-yellow-accent';
+                    else if (category === 'Bom') colorClass = 'text-blue-light';
+                    else if (category === 'Excelente') colorClass = 'text-green-excellent';
+
+
+                    const row = `
+                        <tr class="border-b border-gray-700 hover:bg-gray-700">
+                            <td class="p-3 text-sm">${client.cliente}</td>
+                            <td class="p-3 text-sm text-center font-bold ${colorClass}">${client.potencia.toFixed(2)}</td>
+                            <td class="p-3 text-sm hidden md:table-cell text-gray-400">${client.slotPon}</td>
+                            <td class="p-3 text-sm hidden lg:table-cell text-gray-400">${client.endereco}</td>
+                            <td class="p-3 text-sm hidden lg:table-cell text-gray-400">${client.splitter}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            }
+
+
+            function renderClientsByPonChart() {
+                const counts = clientData.reduce((acc, client) => {
+                    acc[client.slotPon] = (acc[client.slotPon] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const sortedData = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                const labels = sortedData.map(item => wrapLabel(item[0], 16));
+                const data = sortedData.map(item => item[1]);
+
+                const ctx = document.getElementById('clientsByPonChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Nº de Clientes',
+                            data: data,
+                            backgroundColor: '#00A6FB',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                         ...defaultChartTooltip,
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: '#A0AEC0' },
+                                grid: { color: 'rgba(74, 85, 104, 0.5)' }
+                            },
+                            y: {
+                                ticks: { color: '#A0AEC0' },
+                                grid: { color: 'rgba(74, 85, 104, 0.5)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderClientsBySplitterChart() {
+                const counts = clientData.reduce((acc, client) => {
+                    acc[client.splitter] = (acc[client.splitter] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const sortedData = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                const labels = sortedData.map(item => wrapLabel(item[0], 16));
+                const data = sortedData.map(item => item[1]);
+
+                const ctx = document.getElementById('clientsBySplitterChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Nº de Clientes',
+                            data: data,
+                            backgroundColor: '#28C76F',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...defaultChartTooltip,
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: '#A0AEC0' },
+                                grid: { color: 'rgba(74, 85, 104, 0.5)' }
+                            },
+                            y: {
+                                ticks: { color: '#A0AEC0' },
+                                grid: { color: 'rgba(74, 85, 104, 0.5)' }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            document.getElementById('generation-date').textContent = new Date().toLocaleDateString('pt-BR');
+
+            renderOverview();
+            renderSignalQualityChart();
+            renderCriticalClientsTable();
+            renderStreetsWithAttenuationTable(); 
+            renderAllClientsTable();
+            renderClientsByPonChart();
+            renderClientsBySplitterChart();
+        });
+    </script>
+</body>
+</html>
