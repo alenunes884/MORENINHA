@@ -560,7 +560,25 @@
                 const tableBody = document.getElementById('all-clients-table');
                 tableBody.innerHTML = '';
 
-                const sortedClients = [...clientData].sort((a, b) => a.cliente.localeCompare(b.cliente));
+                // Sort by slotPon for consistent display
+                const sortedClients = [...clientData].sort((a, b) => {
+                    // Extract slot and PON numbers for numeric comparison
+                    const parseSlotPon = (slotPonStr) => {
+                        const parts = slotPonStr.match(/SLOT (\d+) PON (\d+)/);
+                        if (parts) {
+                            return { slot: parseInt(parts[1]), pon: parseInt(parts[2]) };
+                        }
+                        return { slot: Infinity, pon: Infinity }; // Handle unexpected formats
+                    };
+
+                    const ponA = parseSlotPon(a.slotPon);
+                    const ponB = parseSlotPon(b.slotPon);
+
+                    if (ponA.slot !== ponB.slot) {
+                        return ponA.slot - ponB.slot;
+                    }
+                    return ponA.pon - ponB.pon;
+                });
 
                 sortedClients.forEach(client => {
                     const category = getSignalCategory(client.potencia);
